@@ -1225,3 +1225,59 @@
   }
 
 }
+
+
+/* =========================================================
+   AUTH BANNERS (Supabase error / success messages)
+   These appear above the <form> and do not affect existing
+   field-level error styles.
+========================================================= */
+
+.auth-error-banner {
+  margin-bottom: 14px;
+
+  padding: 11px 14px;
+
+  background: rgba(163, 59, 59, 0.08);
+
+  border: 1px solid rgba(163, 59, 59, 0.25);
+  border-radius: 9px;
+
+  color: #a33b3b;
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth-success-banner {
+  margin-bottom: 14px;
+
+  padding: 11px 14px;
+
+  background: rgba(34, 139, 87, 0.08);
+
+  border: 1px solid rgba(34, 139, 87, 0.25);
+  border-radius: 9px;
+
+  color: #1e7a50;
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   LOADING / DISABLED BUTTON STATE
+   Preserves existing .auth-button visual identity while
+   communicating the pending state.
+========================================================= */
+
+.auth-button:disabled {
+  opacity: 0.7;
+
+  cursor: not-allowed;
+
+  transform: none !important;
+
+  box-shadow: none !important;
+}
