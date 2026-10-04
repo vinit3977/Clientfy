@@ -411,9 +411,6 @@ function Register() {
                       Manager
                     </option>
 
-                    <option value="Admin">
-                      Admin
-                    </option>
 
                   </select>
 

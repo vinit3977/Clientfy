@@ -208,10 +208,7 @@ function Login() {
                     value={formData.role}
                     onChange={handleChange}
                   >
-                    <option value="Admin">
-                      Admin
-                    </option>
-
+                   
                     <option value="Manager">
                       Manager
                     </option>
