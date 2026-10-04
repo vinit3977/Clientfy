@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Auth.css";
+import { registerUser } from "../services/authService";
 
 function Register() {
   const navigate = useNavigate();
@@ -15,6 +16,15 @@ function Register() {
   });
 
   const [errors, setErrors] = useState({});
+
+  // Loading state — prevents duplicate submissions
+  const [loading, setLoading] = useState(false);
+
+  // General authentication error (not tied to a specific field)
+  const [authError, setAuthError] = useState("");
+
+  // Success message shown when email confirmation is required
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
@@ -102,9 +112,10 @@ function Register() {
      SUBMIT
   ===================================================== */
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ── Step 1: Run existing frontend validation ───────────────────────────
     const validationErrors = validateForm();
 
     if (Object.keys(validationErrors).length > 0) {
@@ -113,25 +124,49 @@ function Register() {
     }
 
     setErrors({});
+    setAuthError("");
+    setSuccessMessage("");
+    setLoading(true);
 
-
-    /*
-      Temporary frontend authentication.
-
-      Later this will be replaced with:
-      Backend API → Database → JWT / Session
-    */
-
-    localStorage.setItem(
-      "clientifyUser",
-      JSON.stringify({
-        name: formData.name.trim(),
-        email: formData.email.trim(),
+    // ── Step 2: Call Supabase Auth via authService ─────────────────────────
+    try {
+      const result = await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
         role: formData.role,
-      })
-    );
+      });
 
-    navigate("/dashboard");
+      if (!result.success) {
+        // Map field-specific errors back into the existing errors state
+        if (result.field) {
+          setErrors({ [result.field]: result.error });
+        } else {
+          setAuthError(result.error);
+        }
+        return;
+      }
+
+      // ── Step 3: Handle confirmation requirement ──────────────────────────
+      if (result.requiresConfirmation) {
+        /*
+          Supabase requires email confirmation.
+          Do NOT redirect to dashboard or store fake session.
+        */
+        setSuccessMessage(result.message);
+        return;
+      }
+
+      // ── Step 4: Confirmed session — proceed to dashboard ─────────────────
+      navigate("/dashboard");
+
+    } catch (unexpectedError) {
+      // Guard against unexpected runtime errors
+      console.error("Registration unexpected error:", unexpectedError);
+      setAuthError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -198,6 +233,20 @@ function Register() {
 
 
             {/* FORM */}
+
+            {/* SUCCESS MESSAGE (email confirmation required) */}
+            {successMessage && (
+              <div className="auth-success-banner" role="alert">
+                {successMessage}
+              </div>
+            )}
+
+            {/* GENERAL AUTH ERROR */}
+            {authError && (
+              <div className="auth-error-banner" role="alert">
+                {authError}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
 
@@ -454,9 +503,10 @@ function Register() {
               <button
                 type="submit"
                 className="auth-button"
+                disabled={loading}
               >
-                Create Account
-                <span>→</span>
+                {loading ? "Creating Account..." : "Create Account"}
+                {!loading && <span>→</span>}
               </button>
 
 

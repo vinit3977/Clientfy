@@ -42,9 +42,13 @@ function App() {
           element={<ResetPassword />}
         />
 
+        <Route
+          path="/reset-password/:uid/:token"
+          element={<ResetPassword />}
+        />
 
-        {/* ==================== PROTECTED APPLICATION ==================== */}
 
+        {/* Protected Application */}
         <Route
           path="/"
           element={

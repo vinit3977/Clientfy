@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Auth.css";
-
+import { loginUser } from "../services/authService";
 
 function Login() {
   const navigate = useNavigate();
@@ -13,15 +13,23 @@ function Login() {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -43,7 +51,7 @@ function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateForm();
@@ -54,17 +62,26 @@ function Login() {
     }
 
     setErrors({});
+    setLoading(true);
 
-    // Temporary frontend authentication
-    localStorage.setItem(
-      "clientifyUser",
-      JSON.stringify({
+    try {
+      const result = await loginUser({
         email: formData.email,
+        password: formData.password,
         role: formData.role,
-      })
-    );
+      });
 
-    navigate("/dashboard");
+      if (!result.success) {
+        setErrors({ email: result.error });
+        return;
+      }
+
+      navigate("/dashboard");
+    } catch (err) {
+      setErrors({ email: "An unexpected error occurred. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -226,8 +243,9 @@ function Login() {
               <button
                 type="submit"
                 className="auth-button"
+                disabled={loading}
               >
-                <span>Sign In</span>
+                <span>{loading ? "Signing In..." : "Sign In"}</span>
                 <span>→</span>
               </button>
 
