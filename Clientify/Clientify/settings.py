@@ -167,6 +167,9 @@ SIMPLE_JWT = {
 }
 
 # ----------------------------------------------------------------
-# Email  (console backend for development)
+# Email & Password Reset Configuration
 # ----------------------------------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Clientify <noreply@clientify.com>")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+PASSWORD_RESET_TIMEOUT = 86400  # Token valid for 24 hours (in seconds)

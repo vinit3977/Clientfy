@@ -30,6 +30,12 @@ function App() {
           element={<ResetPassword />}
         />
 
+        <Route
+          path="/reset-password/:uid/:token"
+          element={<ResetPassword />}
+        />
+
+
         {/* Protected Application */}
         <Route
           path="/"

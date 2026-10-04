@@ -1,7 +1,11 @@
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from .models import Profile
+
 
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="first_name")
@@ -56,7 +60,6 @@ class RegisterSerializer(serializers.Serializer):
         return user
 
 
-
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True)
@@ -80,3 +83,56 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        email_clean = value.lower().strip()
+        user = (
+            User.objects.filter(email__iexact=email_clean).first()
+            or User.objects.filter(username__iexact=email_clean).first()
+        )
+        if not user:
+            raise serializers.ValidationError("No account found with this email address.")
+        return email_clean
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, min_length=6, required=False)
+    new_password = serializers.CharField(write_only=True, min_length=6, required=False)
+
+    def validate(self, attrs):
+        password = attrs.get("password") or attrs.get("new_password")
+        if not password:
+            raise serializers.ValidationError({"password": "Password is required."})
+        if len(password) < 6:
+            raise serializers.ValidationError({"password": "Ensure this field has at least 6 characters."})
+
+        attrs["password"] = password
+
+        uidb64 = attrs.get("uid")
+        token = attrs.get("token")
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({"uid": "Invalid or expired reset link."})
+
+        if not user.is_active:
+            raise serializers.ValidationError({"user": "This user account is inactive."})
+
+        if not default_token_generator.check_token(user, token):
+            raise serializers.ValidationError({"token": "Password reset token is invalid or has expired."})
+
+        attrs["user"] = user
+        return attrs
+
+    def save(self):
+        user = self.validated_data["user"]
+        password = self.validated_data["password"]
+        user.set_password(password)
+        user.save()
+        return user

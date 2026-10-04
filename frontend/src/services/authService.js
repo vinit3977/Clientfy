@@ -179,3 +179,154 @@ export function getCurrentUser() {
     return null;
   }
 }
+
+/**
+ * Request password reset instructions/link from the Django backend.
+ *
+ * @param {string} email
+ * @returns {Promise<Object>}
+ */
+export async function requestPasswordReset(email) {
+  try {
+    const response = await fetch(`${API_URL}/auth/password-reset/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+      }),
+    });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {
+        success: false,
+        error: response.status === 404 ? "Password reset endpoint not found on server." : "Invalid server response.",
+      };
+    }
+
+    if (!response.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || "Failed to send password reset email.",
+        field: data.field || "email",
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || "Password reset instructions sent to your email.",
+      debugResetUrl: data.debug_reset_url || null,
+      uid: data.uid || null,
+      token: data.token || null,
+    };
+  } catch (err) {
+    console.error("Django Auth Password Reset error:", err);
+    return {
+      success: false,
+      error: "Unable to reach the Django backend server. Please verify the backend is running at http://127.0.0.1:8000.",
+      field: null,
+    };
+  }
+}
+
+/**
+ * Validate a password reset token with the Django backend.
+ *
+ * @param {Object} params
+ * @param {string} params.uid
+ * @param {string} params.token
+ * @returns {Promise<Object>}
+ */
+export async function validateResetToken({ uid, token }) {
+  try {
+    const response = await fetch(
+      `${API_URL}/auth/password-reset/validate/?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { valid: false, error: "Invalid server response." };
+    }
+
+    return {
+      valid: Boolean(response.ok && data.valid),
+      error: data.error || null,
+      email: data.email || null,
+      name: data.name || null,
+    };
+  } catch (err) {
+    console.error("Django Auth Validate Token error:", err);
+    return {
+      valid: false,
+      error: "Unable to reach the server to validate reset link.",
+    };
+  }
+}
+
+/**
+ * Confirm and set new password with reset token in Django backend.
+ *
+ * @param {Object} params
+ * @param {string} params.uid
+ * @param {string} params.token
+ * @param {string} params.password
+ * @returns {Promise<Object>}
+ */
+export async function confirmPasswordReset({ uid, token, password }) {
+  try {
+    const response = await fetch(`${API_URL}/auth/password-reset/confirm/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uid,
+        token,
+        password,
+      }),
+    });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {
+        success: false,
+        error: response.status === 404 ? "Reset confirmation endpoint not found." : "Invalid server response.",
+      };
+    }
+
+    if (!response.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || "Failed to reset password. The link may have expired.",
+        field: data.field || null,
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || "Your password has been reset successfully!",
+    };
+  } catch (err) {
+    console.error("Django Auth Confirm Password error:", err);
+    return {
+      success: false,
+      error: "Unable to reach the Django backend server. Please verify the backend is running at http://127.0.0.1:8000.",
+      field: null,
+    };
+  }
+}
+
