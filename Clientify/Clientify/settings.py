@@ -42,9 +42,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-
-    # Local apps
-    "Authentication",
 ]
 
 MIDDLEWARE = [
@@ -172,4 +169,4 @@ SIMPLE_JWT = {
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Clientify <noreply@clientify.com>")
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
-PASSWORD_RESET_TIMEOUT = 86400  # Token valid for 24 hours (in seconds)
+PASSWORD_RESET_TIMEOUT = 86400  # Token valid for 24 hours (in seconds)
