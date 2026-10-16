@@ -28,3 +28,22 @@ class InvoiceSerializer(serializers.ModelSerializer):
             invoice.invoice_number = invoice.generate_invoice_number()
         invoice.save()
         return invoice
+    
+class InvoiceListSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+    project_name = serializers.SerializerMethodField()
+    pending_amount = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'client', 'client_name', 'project',
+            'project_name', 'invoice_date', 'due_date', 'total',
+            'paid_amount', 'pending_amount', 'status', 'currency', 'currency_symbol', 'created_at'
+        ]
+
+    def get_client_name(self, obj):
+        return obj.client.name if obj.client else None
+
+    def get_project_name(self, obj):
+        return obj.project.name if obj.project else None
